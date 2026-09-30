@@ -2,33 +2,210 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>AI上司アプリ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if page == 'form' %}{{ 'タスクを編集' if mode == 'edit' else 'タスクを登録' }}{% elif page == 'detail' %}{{ task.title }}{% else %}タスク一覧{% endif %} | TALLY</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #202d42;
+            --muted: #65748a;
+            --line: #d9e2ef;
+            --paper: #f3f7fc;
+            --surface: #fff;
+            --blue: #2864b4;
+            --blue-dark: #1d4f96;
+            --blue-pale: #e4efff;
+            --green: #176b56;
+            --green-dark: #105341;
+            --green-pale: #e2f1e9;
+            --orange: #b6532e;
+            --orange-pale: #fff0e8;
+            --gray-pale: #edf1f6;
+            --shadow: 0 12px 34px rgba(34, 74, 128, .07);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: "BIZ UDPGothic", "Yu Gothic UI", sans-serif;
+            font-size: 14px;
+            line-height: 1.65;
+        }
+        a { color: inherit; text-decoration: none; }
+        button, input, select, textarea { font: inherit; }
+        .topbar {
+            height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 max(24px, calc((100vw - 1240px) / 2));
+            background: var(--surface);
+            border-bottom: 1px solid var(--line);
+        }
+        .brand { display: flex; align-items: center; gap: 11px; font-weight: 800; letter-spacing: .04em; }
+        .brand-mark { width: 25px; height: 25px; border-radius: 7px; background: var(--blue); position: relative; }
+        .brand-mark::after { content: ""; position: absolute; width: 9px; height: 5px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg); top: 8px; left: 7px; }
+        .brand small { display: block; margin-top: -3px; color: var(--muted); font-size: 10px; font-weight: 500; letter-spacing: .12em; }
+        .top-link { color: var(--muted); font-size: 13px; }
+        .top-link:hover, .text-link:hover { color: var(--blue); }
+        main { max-width: 1240px; margin: 0 auto; padding: 39px 24px 72px; }
+        .heading-row { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 25px; }
+        .eyebrow { color: var(--blue); font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+        h1 { margin: 4px 0 0; font-size: 27px; line-height: 1.35; letter-spacing: 0; }
+        .subtitle { margin: 7px 0 0; color: var(--muted); }
+        .button { display: inline-flex; min-height: 41px; align-items: center; justify-content: center; gap: 8px; padding: 0 15px; border: 1px solid transparent; border-radius: 5px; background: var(--blue); color: #fff; font-weight: 700; cursor: pointer; transition: background .18s ease, transform .18s ease; }
+        .button:hover { background: var(--blue-dark); transform: translateY(-1px); }
+        .button.secondary { color: var(--ink); background: #fff; border-color: var(--line); }
+        .button.secondary:hover { background: #f3f7fc; }
+        .button.danger { color: var(--orange); background: #fff; border-color: #e7c9bc; }
+        .button.danger:hover { background: var(--orange-pale); }
+        .searchbar { display: flex; gap: 9px; margin-bottom: 15px; }
+        .search-wrap { flex: 1; position: relative; }
+        .search-wrap::before { content: ""; position: absolute; width: 11px; height: 11px; border: 1.7px solid #75817d; border-radius: 50%; top: 13px; left: 14px; }
+        .search-wrap::after { content: ""; position: absolute; height: 6px; border-left: 1.7px solid #75817d; transform: rotate(-45deg); top: 24px; left: 26px; }
+        .search-wrap input { width: 100%; height: 43px; padding: 0 14px 0 39px; border: 1px solid var(--line); border-radius: 5px; background: #fff; outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(40, 100, 180, .13); outline: none; }
+        .list-panel, .content-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 7px; box-shadow: var(--shadow); }
+        .list-meta { display: flex; align-items: center; justify-content: space-between; padding: 15px 18px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+        .list-meta strong { color: var(--ink); font-size: 14px; }
+        .table-scroll { overflow-x: auto; }
+        table { width: 100%; min-width: 780px; border-collapse: collapse; text-align: left; }
+        th { height: 43px; padding: 0 17px; background: #f7f9fd; color: var(--muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
+        td { height: 67px; padding: 9px 17px; border-top: 1px solid #edf1f7; white-space: nowrap; }
+        tbody tr { animation: appear .28s both; }
+        tbody tr:hover { background: #f9fbff; }
+        .task-name { display: block; max-width: 300px; overflow: hidden; color: var(--ink); font-weight: 700; text-overflow: ellipsis; }
+        .task-name:hover { color: var(--blue); }
+        .task-sub { display: block; max-width: 300px; overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; }
+        .pill { display: inline-flex; align-items: center; min-height: 24px; padding: 1px 9px; border-radius: 3px; font-size: 11px; font-weight: 700; }
+        .status-not-started { color: #5f6965; background: var(--gray-pale); }
+        .status-progress { color: #386b87; background: #e8f1f5; }
+        .status-hold { color: #986122; background: #fbf1dc; }
+        .status-complete { color: var(--green); background: var(--green-pale); }
+        .priority-high { color: var(--orange); }
+        .priority-medium { color: #986122; }
+        .priority-low { color: var(--muted); }
+        .empty { padding: 58px 20px; text-align: center; }
+        .empty-mark { width: 42px; height: 42px; margin: 0 auto 13px; border: 1px solid var(--line); border-radius: 50%; color: var(--blue); font-size: 21px; line-height: 40px; }
+        .empty strong { display: block; font-size: 15px; }
+        .empty p { margin: 4px 0 17px; color: var(--muted); }
+        .back-link { display: inline-block; margin-bottom: 17px; color: var(--muted); font-size: 12px; }
+        .back-link:hover { color: var(--blue); }
+        .content-panel { padding: 26px 30px 30px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 19px 20px; }
+        .field.full { grid-column: 1 / -1; }
+        label { display: block; margin-bottom: 6px; color: #495653; font-size: 12px; font-weight: 700; }
+        .required { margin-left: 5px; color: var(--orange); font-size: 10px; }
+        .field input, .field select, .field textarea { width: 100%; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--ink); }
+        .field input, .field select { height: 42px; padding: 0 11px; }
+        .field textarea { min-height: 145px; padding: 10px 11px; resize: vertical; }
+        .form-error { margin: 0 0 18px; padding: 10px 13px; border-left: 3px solid var(--orange); background: var(--orange-pale); color: #8b3b20; }
+        .form-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 25px; padding-top: 19px; border-top: 1px solid var(--line); }
+        .detail-heading { display: flex; justify-content: space-between; gap: 20px; align-items: start; }
+        .detail-title { margin: 5px 0 0; overflow-wrap: anywhere; font-size: 24px; }
+        .detail-actions { display: flex; gap: 8px; }
+        .detail-actions form { margin: 0; }
+        .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 24px; border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+        .detail-item { min-height: 78px; padding: 13px 15px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+        .detail-label { display: block; margin-bottom: 4px; color: var(--muted); font-size: 11px; }
+        .detail-value { overflow-wrap: anywhere; font-weight: 600; }
+        .details-text { min-height: 120px; padding: 17px 0 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .details-heading { margin: 21px 0 0; font-size: 13px; }
+        .completion-note { margin-top: 16px; padding: 11px 13px; border-left: 3px solid var(--green); background: var(--green-pale); color: var(--green-dark); }
+        @keyframes appear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 680px) {
+            .topbar { height: 60px; padding: 0 18px; }
+            main { padding: 27px 16px 48px; }
+            .heading-row { align-items: start; }
+            h1 { font-size: 23px; }
+            .heading-row .button { min-height: 38px; padding: 0 10px; font-size: 12px; }
+            .searchbar { gap: 7px; }
+            .searchbar > .button { padding: 0 10px; }
+            .content-panel { padding: 21px 17px; }
+            .form-grid { grid-template-columns: 1fr; gap: 15px; }
+            .field.full { grid-column: auto; }
+            .detail-heading { display: block; }
+            .detail-actions { margin-top: 16px; }
+            .detail-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+    </style>
 </head>
 <body>
-
-    <h1>AI上司アプリ</h1>
-
-    <form method="post">
-
-        <p>完了したタスク</p>
-
-        <input
-            type="text"
-            name="task"
-            size="50"
-            required>
-
-        <button type="submit">
-            完了
-        </button>
-
-    </form>
-
-    <hr>
-
-    <h2>AIコメント</h2>
-
-    <p>{{ comment }}</p>
-
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('index') }}"><span class="brand-mark" aria-hidden="true"></span><span>TALLY<small>TASK WORKSPACE</small></span></a>
+        <a class="top-link" href="{{ url_for('index') }}">タスク一覧</a>
+    </header>
+    <main>
+        {% if page == 'form' %}
+            <a class="back-link" href="{{ url_for('task_detail', task_id=task.id) if mode == 'edit' else url_for('index') }}">← 戻る</a>
+            <div class="heading-row">
+                <div><div class="eyebrow">TASK / {{ 'EDIT' if mode == 'edit' else 'NEW' }}</div><h1>{{ 'タスクを編集' if mode == 'edit' else 'タスクを登録' }}</h1><p class="subtitle">必要な情報を入力してください。</p></div>
+            </div>
+            <section class="content-panel">
+                {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+                <form method="post">
+                    <div class="form-grid">
+                        <div class="field full"><label for="title">タスク名<span class="required">必須</span></label><input id="title" name="title" value="{{ task.title }}" maxlength="200" required autofocus></div>
+                        <div class="field full"><label for="details">タスク詳細</label><textarea id="details" name="details">{{ task.details }}</textarea></div>
+                        <div class="field"><label for="assignee">担当者</label><input id="assignee" name="assignee" value="{{ task.assignee }}" maxlength="100" placeholder="担当者名"></div>
+                        <div class="field"><label for="due_date">期限日</label><input id="due_date" name="due_date" type="date" value="{{ task.due_date or '' }}"></div>
+                        <div class="field"><label for="priority">優先度</label><select id="priority" name="priority">{% for priority in priorities %}<option value="{{ priority }}" {% if task.priority == priority %}selected{% endif %}>{{ priority }}</option>{% endfor %}</select></div>
+                        <div class="field"><label for="status">ステータス</label><select id="status" name="status">{% for status in statuses %}<option value="{{ status }}" {% if task.status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select></div>
+                    </div>
+                    <div class="form-actions"><a class="button secondary" href="{{ url_for('task_detail', task_id=task.id) if mode == 'edit' else url_for('index') }}">キャンセル</a><button class="button" type="submit">{{ '変更を保存' if mode == 'edit' else 'タスクを登録' }}</button></div>
+                </form>
+            </section>
+        {% elif page == 'detail' %}
+            <a class="back-link" href="{{ url_for('index') }}">← タスク一覧</a>
+            <section class="content-panel">
+                <div class="detail-heading">
+                    <div><div class="eyebrow">TASK / DETAIL</div><h1 class="detail-title">{{ task.title }}</h1></div>
+                    <div class="detail-actions">
+                        <a class="button secondary" href="{{ url_for('edit_task', task_id=task.id) }}">編集</a>
+                        <form method="post" action="{{ url_for('delete_task', task_id=task.id) }}" onsubmit="return confirm('このタスクを削除します。この操作は取り消せません。');"><button class="button danger" type="submit">削除</button></form>
+                    </div>
+                </div>
+                <div class="detail-grid">
+                    <div class="detail-item"><span class="detail-label">担当者</span><span class="detail-value">{{ task.assignee or '未設定' }}</span></div>
+                    <div class="detail-item"><span class="detail-label">優先度</span><span class="detail-value">{{ task.priority }}</span></div>
+                    <div class="detail-item"><span class="detail-label">ステータス</span><span class="detail-value"><span class="pill {% if task.status == '完了' %}status-complete{% elif task.status == '進行中' %}status-progress{% elif task.status == '保留' %}status-hold{% else %}status-not-started{% endif %}">{{ task.status }}</span></span></div>
+                    <div class="detail-item"><span class="detail-label">期限日</span><span class="detail-value">{{ task.due_date or '未設定' }}</span></div>
+                    <div class="detail-item"><span class="detail-label">作成日</span><span class="detail-value">{{ task.created_at }}</span></div>
+                    <div class="detail-item"><span class="detail-label">更新日</span><span class="detail-value">{{ task.updated_at }}</span></div>
+                </div>
+                {% if task.completed_at %}<div class="completion-note">完了日時　{{ task.completed_at }}</div>{% endif %}
+                <h2 class="details-heading">タスク詳細</h2><div class="details-text">{{ task.details or '詳細はありません。' }}</div>
+            </section>
+        {% else %}
+            <div class="heading-row">
+                <div><div class="eyebrow">WORKSPACE / TASKS</div><h1>タスク一覧</h1><p class="subtitle">タスクの進捗と担当をまとめて管理。</p></div>
+                <a class="button" href="{{ url_for('create_task') }}"><span aria-hidden="true">＋</span> 新しいタスク</a>
+            </div>
+            <form class="searchbar" method="get" action="{{ url_for('index') }}" role="search">
+                <div class="search-wrap"><input name="q" value="{{ query }}" aria-label="タスク名、担当者、ステータス、優先度で検索" placeholder="タスク名、担当者、ステータス、優先度で検索"></div>
+                <button class="button" type="submit">検索</button>
+                {% if query %}<a class="button secondary" href="{{ url_for('index') }}">クリア</a>{% endif %}
+            </form>
+            <section class="list-panel">
+                <div class="list-meta"><strong>すべてのタスク</strong><span>{{ tasks|length }} 件{% if query %} · 「{{ query }}」の検索結果{% endif %}</span></div>
+                {% if tasks %}
+                    <div class="table-scroll"><table>
+                        <thead><tr><th>タスク名</th><th>担当者</th><th>優先度</th><th>ステータス</th><th>期限日</th><th>作成日</th></tr></thead>
+                        <tbody>{% for task in tasks %}<tr style="animation-delay: {{ loop.index0 * 35 }}ms">
+                            <td><a class="task-name" href="{{ url_for('task_detail', task_id=task.id) }}">{{ task.title }}</a>{% if task.details %}<span class="task-sub">{{ task.details }}</span>{% endif %}</td>
+                            <td>{{ task.assignee or '未設定' }}</td>
+                            <td><span class="priority-{{ 'high' if task.priority == '高' else 'medium' if task.priority == '中' else 'low' }}">{{ task.priority }}</span></td>
+                            <td><span class="pill {% if task.status == '完了' %}status-complete{% elif task.status == '進行中' %}status-progress{% elif task.status == '保留' %}status-hold{% else %}status-not-started{% endif %}">{{ task.status }}</span></td>
+                            <td>{{ task.due_date or '—' }}</td><td>{{ task.created_at[:10] }}</td>
+                        </tr>{% endfor %}</tbody>
+                    </table></div>
+                {% else %}
+                    <div class="empty"><div class="empty-mark" aria-hidden="true">＋</div><strong>{{ '一致するタスクはありません' if query else 'タスクはまだありません' }}</strong><p>{{ '検索条件を変えてお試しください。' if query else '最初のタスクを登録して、ここから進捗を管理しましょう。' }}</p>{% if not query %}<a class="button" href="{{ url_for('create_task') }}">タスクを登録</a>{% endif %}</div>
+                {% endif %}
+            </section>
+        {% endif %}
+    </main>
 </body>
 </html>
