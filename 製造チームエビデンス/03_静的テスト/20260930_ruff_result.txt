@@ -1,0 +1,59 @@
+DTZ007 Naive datetime constructed using `datetime.datetime.strptime()` without %z
+  --> app.py:86:13
+   |
+84 |     if values["due_date"]:
+85 |         try:
+86 |             datetime.strptime(values["due_date"], "%Y-%m-%d")
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+87 |         except ValueError:
+88 |             return "期限日を正しく入力してください。"
+   |
+help: Call `.replace(tzinfo=<timezone>)` or `.astimezone()` to convert to an aware datetime
+
+DTZ005 `datetime.datetime.now()` called without a `tz` argument
+   --> app.py:127:19
+    |
+125 |         error = validate_task(values)
+126 |         if error is None:
+127 |             now = datetime.now().isoformat(timespec="seconds")
+    |                   ^^^^^^^^^^^^^^
+128 |             completed_at = now if values["status"] == "完了" else None
+129 |             with db_connection() as connection:
+    |
+help: Pass a `datetime.timezone` object to the `tz` parameter
+
+DTZ005 `datetime.datetime.now()` called without a `tz` argument
+   --> app.py:163:19
+    |
+161 |         error = validate_task(values)
+162 |         if error is None:
+163 |             now = datetime.now().isoformat(timespec="seconds")
+    |                   ^^^^^^^^^^^^^^
+164 |             if values["status"] == "完了":
+165 |                 completed_at = task["completed_at"] or now
+    |
+help: Pass a `datetime.timezone` object to the `tz` parameter
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> test_gemini.py:1:1
+  |
+1 | / from google import genai
+2 | | import sys
+3 | | import os
+  | |_________^
+4 |
+5 |   client = genai.Client(
+  |
+help: Organize imports
+  |
+  - from google import genai
+  - import sys
+1 | import os
+2 + import sys
+3 +
+4 + from google import genai
+5 |
+  |
+
+Found 4 errors.
+[*] 1 fixable with the `--fix` option.
