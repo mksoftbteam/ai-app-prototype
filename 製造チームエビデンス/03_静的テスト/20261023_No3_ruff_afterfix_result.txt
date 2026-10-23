@@ -1,0 +1,14 @@
+SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+  --> test_app.py:87:9
+   |
+85 |           client = unittest.mock.MagicMock()
+86 |           client.models.generate_content.side_effect = [UnavailableError(), Response()]
+87 | /         with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key", "GEMINI_MODEL": "requested-model"}):
+88 | |             with patch("google.genai.Client", return_value=client):
+   | |___________________________________________________________________^
+89 |                   result = task_app.gemini_generate("短い入力", "回答してください")
+90 |           self.assertEqual(len(result), 5000)
+   |
+help: Combine `with` statements
+
+Found 1 error.

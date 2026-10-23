@@ -1,28 +1,8 @@
-from google import genai
 import sys
-import os
 
-client = genai.Client(
-    api_key=os.environ["GEMINI_API_KEY"]
-)
+from app import gemini_generate
 
-task = sys.argv[1]
+if len(sys.argv) < 2:
+    raise SystemExit("使い方: python test_gemini.py 'Geminiに送る入力' (2000文字以内)")
 
-with open(
-    "prompts/system_prompt.txt",
-    "r",
-    encoding="utf-8"
-) as f:
-    prompt_template = f.read()
-
-prompt = prompt_template.replace(
-    "{TASK}",
-    task
-)
-
-response = client.models.generate_content(
-    model="gemini-3.6-flash",
-    contents=prompt
-)
-
-print(response.text)
+print(gemini_generate(" ".join(sys.argv[1:]), "入力に対して簡潔に回答してください。"))

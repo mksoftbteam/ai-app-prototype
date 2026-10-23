@@ -1,0 +1,70 @@
+UP017 [*] Use `datetime.UTC` alias
+  --> app.py:28:25
+   |
+27 | def now_iso():
+28 |     return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+   |                         ^^^^^^^^^^^^
+help: Convert to `datetime.UTC` alias
+   |
+5  | from contextlib import contextmanager
+   - from datetime import datetime, timezone
+6  + from datetime import datetime, timezone, UTC
+7  | from pathlib import Path
+--------------------------------------------------------------------------------
+27 | def now_iso():
+   -     return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+28 +     return datetime.now(UTC).astimezone().isoformat(timespec="seconds")
+29 |
+   |
+
+SIM117 [*] Use a single `with` statement with multiple contexts instead of nested `with` statements
+  --> test_app.py:39:9
+   |
+37 |           self.assertIn("山田".encode(), self.client.get("/?q=山田&priority=高").data)
+38 |
+39 | /         with task_app.app.app_context():
+40 | |             with task_app.get_db() as connection:
+   | |_________________________________________________^
+41 |                   task_id = connection.execute("SELECT id FROM tasks").fetchone()["id"]
+42 |           response = self.client.post(
+   |
+help: Combine `with` statements
+   |
+38 |
+   -         with task_app.app.app_context():
+   -             with task_app.get_db() as connection:
+   -                 task_id = connection.execute("SELECT id FROM tasks").fetchone()["id"]
+39 +         with task_app.app.app_context(), task_app.get_db() as connection:
+40 +             task_id = connection.execute("SELECT id FROM tasks").fetchone()["id"]
+41 |         response = self.client.post(
+   |
+
+SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+  --> test_app.py:88:9
+   |
+86 |           client = unittest.mock.MagicMock()
+87 |           client.models.generate_content.side_effect = [UnavailableError(), Response()]
+88 | /         with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key", "GEMINI_MODEL": "requested-model"}):
+89 | |             with patch("google.genai.Client", return_value=client):
+   | |___________________________________________________________________^
+90 |                   result = task_app.gemini_generate("短い入力", "回答してください")
+91 |           self.assertEqual(len(result), 5000)
+   |
+help: Combine `with` statements
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> test_gemini.py:1:1
+  |
+1 | / import sys
+2 | |
+3 | | from app import gemini_generate
+  | |_______________________________^
+help: Organize imports
+  |
+4 |
+  -
+5 | if len(sys.argv) < 2:
+  |
+
+Found 4 errors.
+[*] 3 fixable with `--fix`.
